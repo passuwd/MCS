@@ -1,0 +1,23 @@
+name: macOS
+on: workflow_dispatch
+
+jobs:
+  vnc-session:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup VNC Server
+        run: |
+          # Устанавливаем пароль для пользователя runner
+          sudo dscl . -passwd /Users/runner "MCSrunner!"
+          
+          # Настройка Screen Sharing
+          sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart \
+            -activate -configure -access -on \
+            -clientopts -setvncpw -vncpw "MCSrunner!" \
+            -restart -agent -privs -all
+
+      - name: Setup Tmate Session
+        uses: mxschmitt/action-tmate@v3

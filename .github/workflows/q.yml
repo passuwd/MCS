@@ -1,0 +1,22 @@
+name: macOS VNC (Fixed Password)
+on: workflow_dispatch
+
+jobs:
+  vnc-session:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup User and VNC
+        run: |
+          sudo sysadminctl -adminUser runner -adminPassword "" -resetPasswordFor runner -newPassword "Kirk456!"
+          sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart \
+            -activate -configure -access -on \
+            -clientopts -setvncpw -vncpw "Kirk456!" \
+            -restart -agent -privs -all
+          
+          echo "Password successfully reset and VNC enabled."
+
+      - name: Setup Tmate Session
+        uses: mxschmitt/action-tmate@v3

@@ -1,22 +1,34 @@
-name: macOS VNC (Fixed Password)
+name: macOS Direct VNC (Cloudflare)
 on: workflow_dispatch
 
 jobs:
   vnc-session:
     runs-on: macos-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Install Cloudflared
+        run: brew install cloudflared
 
-      - name: Setup User and VNC
+      - name: Setup VNC & Password
         run: |
-          sudo sysadminctl -adminUser runner -adminPassword "" -resetPasswordFor runner -newPassword "Kirk456!"
+          # Смена пароля пользователя (без старого пароля)
+          sudo sysadminctl -adminUser runner -adminPassword "" -resetPasswordFor runner -newPassword "Kirk4564"
+          
+          # Настройка VNC сервера
           sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart \
             -activate -configure -access -on \
-            -clientopts -setvncpw -vncpw "Kirk456!" \
+            -clientopts -setvncpw -vncpw "Kirk4564" \
             -restart -agent -privs -all
-          
-          echo "Password successfully reset and VNC enabled."
 
-      - name: Setup Tmate Session
-        uses: mxschmitt/action-tmate@v3
+      - name: Start Cloudflare Tunnel
+        run: |
+          # Запускаем туннель и сохраняем лог, чтобы вытащить URL
+          nohup cloudflared tunnel --url tcp://localhost:5900 > cf.log 2>&1 &
+          sleep 10
+          echo "--- ТВОЯ ССЫЛКА ДЛЯ ПОДКЛЮЧЕНИЯ ---"
+          grep -oE "https://[a-zA-Z0-9.-]+\.trycloudflare\.com" cf.log | sed 's/https/tcp/'
+          echo "----------------------------------"
+          echo "User: runner"
+          echo "Password: password123"
+
+      - name: Keep Alive
+        run: sleep 21600 # Сессия на 6 часов
